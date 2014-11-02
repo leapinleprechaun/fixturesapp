@@ -1,0 +1,442 @@
+<!doctype html>
+<!-- paulirish.com/2008/conditional-stylesheets-vs-css-hacks-answer-neither/ -->
+<!--[if lt IE 7]> <html class="no-js lt-ie9 lt-ie8 lt-ie7" lang="en"> <![endif]-->
+<!--[if IE 7]>    <html class="no-js lt-ie9 lt-ie8" lang="en"> <![endif]-->
+<!--[if IE 8]>    <html class="no-js lt-ie9" lang="en"> <![endif]-->
+<!-- Consider adding a manifest.appcache: h5bp.com/d/Offline -->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en"> <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+	<head>
+		<title>Results App</title>
+		<script src="jquery-1.11.1.min.js"></script>
+    <style>
+
+    input[type="button"]{clear:both; width:100%; display;block;padding:10px;border:1px solid #dedede; background:#fff; margin-top:20px;}
+     input[type="button"]:hover{background: #dedede; cursor: pointer;}
+     input[type="checkbox"]{margin:10px;}
+     #dateDropDown, #storecontent{margin:20px;}
+
+.chooseTeams{display;block;padding:10px;border:1px solid #dedede; background:#fff; }
+
+     li {list-style-type:none;}
+     li:hover{background: #efefef;}
+     li strong{width:200px; display:inline-block; text-align: right}
+
+.team-checks li{overflow: visible;}
+.team-checks label{width:29%; float:left; border:1px solid #efefef; margin:2%; min-height:100px; text-align: center; padding-top:5%; }
+.team-checks label:hover{background:#efefef; cursor: pointer;}
+.team-checks input[type="checkbox"]{position:absolute; left:-9999px;}
+.team-checks label.highlight{border:1px solid red;}
+
+
+    </style>
+	</head>
+	
+	<body>
+
+    <form class="team-checks">
+
+    </form>
+
+    <input type="button" id="fixtures" class="runApp" value="See league fixtures">
+      <input type="button" id="results" class="runApp" value="See league results">
+        <input type="button" id="next" class="runApp" value="Next league match">
+
+<a class="chooseTeams" href="#">Change teams</a>
+
+    <div id="dateDropDown"></div>
+    <div id="storecontent"></div>
+
+
+<script>
+
+          /* Reusable Functions */
+
+                           //used later to filter out unique array items
+                            function onlyUnique(value, index, self) { 
+                              return self.indexOf(value) === index;
+                            }
+
+                          //returnUnique items of an array
+                          function returnUnique(chosenArray){
+                              return chosenArray.filter(onlyUnique); 
+                          };
+
+                          //output to a container on the page
+                          function display(content,container){
+                            $(container).html(content);
+                          }
+
+
+                          function nextDate( startDate, dates ) {
+                              var startTime = +startDate;
+                              var nearestDate, nearestDiff = Infinity;
+                              for( var i = 0, n = dates.length;  i < n;  ++i ) {
+                                  var diff = +dates[i] - startTime;
+                                  if( diff > 0  &&  diff < nearestDiff ) {
+                                      nearestDiff = diff;
+                                      nearestDate = dates[i];
+                                  }
+                              }
+                              return nearestDate;
+                          }
+
+    /* end Reusable Functions */
+
+//Must config these for a per club basis. The team and league id must be matched - teamName : [leagueID, sex]
+var teamProperties = {
+  "Firsts" : [18,"Ladies"],
+  "Seconds" : [20,"Ladies"],
+  "Thirds" : [22,"Ladies"],
+  "Fourths" : [24,"Ladies"],
+  "Fifths" : [26, "Ladies"]
+}
+
+var showGamesFunction= function (leagues, useraction, uniqueRealDates, allMatches){ 
+                         //leagues parameter gets an array in from either the checked items or the entire list of unique leagues
+                         //when should have either future or past as a string to decide if they are fixtures or results
+
+                         var now = new Date();
+                         var tense = useraction;
+                         var todayUsable = new Date(now.getFullYear() + ', ' + (now.getMonth()+1) + ', ' + now.getDate());
+                         var theNextDate = nextDate( todayUsable, uniqueRealDates );
+                         theNextDate = theNextDate.getTime();
+
+                         var matchList ='<ul>'; //initialise the var and start the container for the list items
+
+
+                      //give it an array of dates
+                      //get result
+                      //do query on object to match that result
+
+
+                         //run a loop on allmatches data to check league info
+                         for(var matches in allMatches){
+
+                                    for(i = 0; i<leagues.length; i++){
+                                    
+                                        // if the league attribute on any of the matches, matches league[number] then out put its info
+                                        if(allMatches[matches].league == leagues[i] ){ 
+
+                                          var currentMatchDate = new Date(allMatches[matches].matchDate);
+                                          var currentParsedDate = new Date(allMatches[matches].parsedDate);
+                                          var currentParsedDateTime = currentParsedDate.getTime();
+                                         
+                                            if(useraction === "fixtures"){
+                                                  if(currentMatchDate > now){
+                                                    matchList += "<li><strong>" + allMatches[matches].displayDate + "</strong> : " + allMatches[matches].title + "</li>";      
+                                                  }
+                                                  else{
+                                                    //matchList += "<li>past event:" + allMatches[matches].displayDate + "</li>";
+                                                  }
+
+                                            }
+                                           else if(useraction === "results"){
+                                              if(currentMatchDate < now){
+                                                    matchList += "<li><strong>" + allMatches[matches].displayDate + "</strong> : " + allMatches[matches].title + " <strong>Result:</strong> " + allMatches[matches].score +"</li>";      
+                                                  }
+                                                  else{
+                                                    //matchList += "<li>future event event:" + allMatches[matches].displayDate + "</li>";
+                                                  }
+
+                                            }
+                                             else if(useraction === "next"){
+                                              
+                                              
+                                              //using getTime because dates dont match otherwise
+                                              if(currentParsedDateTime === theNextDate){
+                                                  //console.log('MATCH currentParsedDateTime: ' + currentParsedDateTime);
+                                                  //console.log('MATCH theNextDate: ' + theNextDate);
+                                                  matchList += "<li><strong>" + allMatches[matches].displayDate + "</strong> : " + allMatches[matches].title + "</li>";  
+                                             }
+                                             else{
+                                               //console.log('ELSE currentParsedDateTime: ' + currentParsedDateTime);
+                                                //console.log('ELSE theNextDate: ' + theNextDate);
+
+                                             }
+
+                                           }
+
+
+                                                                     
+                                        } 
+ 
+                                    } //end for loop (so we only run the amount of times there are unique leagues or selected leagues)
+                               
+                         } //end loop of json content
+
+                        matchList += "</ul>"; //finish off the list after the loop runs
+
+                        return matchList;
+
+} //end showGames
+
+
+                            //bring back all dates into a select box
+                            function showDates(allDates){
+                              //allDates takes in the unique dates from the json file
+
+                                  var dateList = '<p>Filter by date:</p><select><option value="reset">View all</option>';
+
+                                  for(i=0; i<allDates.length; i++){
+                                         dateList += '<option value="' + allDates[i] + '">' + allDates[i] + '</option>';
+                                  }
+                                  dateList += '</select>';
+ 
+
+                                 return dateList;
+                                  
+
+                            }; //end showDates
+
+
+
+       
+
+/*plan is: 
+fill in userAction in event scripts on the form
+getData shouls accept that info in as a paramenter and use cases to give different actions
+these actions will be different elements in the object and will need to be passed in the info from getdata
+should be able to seperate out the tasks into methods this way - could put different info through them as needed
+
+*/
+var AppInfo = {
+  userAction : "",
+  getData :  function(process){
+      /* call to json */
+            var responseJsonVar;
+            var callbackName, script, newInfo, mydata;
+            // Get a random name for our callback
+            callbackName = "checkGames" + new Date().getTime() + Math.floor(Math.random() * 10000);
+
+            // create the jsonPscript on the page
+            script = document.createElement('script');
+                    script.src = "http://www.hookhockey.com/index.php/temp-gillian/?callback=" + callbackName;
+            document.documentElement.appendChild(script);
+
+            // Create the call function - this is the call to json
+            window[callbackName] = function(data) {
+            
+                /* Information back from json call */
+
+                responseJsonVar = data; // this is the info back from the json file
+                //the filtered data source from json
+                //var allMatches = responseJsonVar["matches"];
+
+                window.allMatches = responseJsonVar["matches"];
+
+                /* End information back from json call */
+
+               //AppInfo.returnedInfo(allMatches); //this is used for testig the overall output
+
+
+/* any functions to call in the info - all i should be doing here is passing through the info from the json file */
+              //can decide what goes into all matches here - to send less information down the entire app
+
+            switch(process){
+
+              case 'generateTeams':
+              //console.log('gern:' + process);
+              //this way I can run it by default to generate the team list
+              AppInfo.generateTeams(allMatches);
+              break
+
+              case 'showGames':
+              console.log('games:' +process);
+              AppInfo.showGames(allMatches);
+              break
+
+              default:
+              alert('none');
+            }
+
+
+          
+
+ /* end functions to call in the info */             
+
+                /* wrap up the error handling for the json request */
+
+                    // Remove our callback ('delete' with 'window properties fails on some versions of IE, so we fall back to setting the property to 'undefined' if that happens)
+                    try {
+                        delete window[callbackName];
+                    }
+                    catch (e) {
+                        window[callbackName] = undefined;
+                    }
+
+                /* end wrap up the error handling for the json request */
+          
+            }; // end  window[callbackName] function
+
+}, //end getdata method
+  arraySetUp : function(allMatches){
+                  /* Establish neccesary arrays */
+
+                        var checkedTeams = []; //initialise the array to capture input from the form
+                        
+                        // establish the array before the for loop kicks in to get all the dates from the matches
+                        var datesArray = new Array();
+
+                        //establish the array before the for loop kicks in to get all the leagues from the matches
+                        var leaguesArray = new Array(); 
+
+                        var actualDatesArray = new Array();
+
+
+                  /* Start pushing content to the arrays */    
+
+                        // get all checked boxes values from the form for use in generating the list
+                          $('.team-checks input[type="checkbox"]:checked').each(function() {
+                            checkedTeams.push($(this).val()); //the values in the form have the league numbers e.g. 1sts is 18 as thats the league ID
+                          });
+
+                          //populates 2 arrays, leagues and dates
+                          for(var matches in allMatches){
+                            leaguesArray.push(allMatches[matches].league); //get back an array of all the different leagues mentioned in the json
+                            datesArray.push(allMatches[matches].matchDate); //get back an array of all the different match dates mentioned in the json
+                            actualDatesArray.push(new Date(allMatches[matches].parsedDate));
+                          }
+
+                        //filter that league array down to only unique ones so we dont call the same thing over and over. If the user doesnt choose any leagues were going to populate the form with this
+                        var uniqueLeagues = returnUnique(leaguesArray);
+                        var uniqueDates = returnUnique(datesArray);
+                        var uniqueRealDates = returnUnique(actualDatesArray);
+
+                        //console.dir('uniqueLeagues: ' + uniqueLeagues);
+                        return [uniqueLeagues,uniqueDates,uniqueRealDates,checkedTeams];
+  }, //end array stuff
+returnedInfo: function(getDataInfo){
+  //used to test the overall info is coming through
+    var jsonInfo = getDataInfo;
+    console.log('testing return');
+    console.dir(jsonInfo);
+    return jsonInfo;
+},
+generateTeams: function(acquiredInfo){
+          var allMatches = acquiredInfo;
+          var arrayInfo = AppInfo.arraySetUp(allMatches);
+          var uniqueLeagues = arrayInfo[0];
+
+          for(teams in teamProperties){
+
+              var teamName = teams;
+              var teamLeagueID = teamProperties[teams][0];
+              var teamSex = teamProperties[teams][1];
+
+                //output the links to all the teams specified in teamProperties object
+                $('.team-checks').append('<input type="checkbox" name="' + teamSex + ' ' + teamName + '" id="' + teamName + '" value="' + teamLeagueID + '"><label for="' + teamName + '">' + teamSex + ' ' + teamName + '</label>');
+          
+          } //end for loop
+
+
+},
+showGames : function(acquiredInfo){
+          //this has been passed in by the getData line
+          var allMatches = acquiredInfo;
+
+          //Run all the build array tasks
+          AppInfo.arraySetUp(allMatches);
+
+          /* Check out for form information and gets the info in from the arrays */ 
+
+          //run the method, get the return values from the array
+          var arrayInfo = AppInfo.arraySetUp(allMatches);
+          var uniqueLeagues = arrayInfo[0];
+          var uniqueDates = arrayInfo[1];
+          var uniqueRealDates = arrayInfo[2];
+          var checkedTeams = arrayInfo[3];              
+
+          //runs the form function  - if particular teams are chosen then show those, if nothing chosen show all of them
+
+               if(checkedTeams != ''){
+                //can decide here what allmatches is if we need
+                     display(showGamesFunction(checkedTeams,AppInfo.userAction,uniqueRealDates,allMatches),"#storecontent");
+                                    
+                  }
+               else{
+                    display(showGamesFunction(uniqueLeagues,AppInfo.userAction,uniqueRealDates,allMatches),"#storecontent");
+                   }
+
+                  /* End Check out for form information */ 
+},
+
+  options : "hello"
+
+}; // end AppInfo object
+
+
+/* visual effects on buttons etc */
+$('.chooseTeams').hide();
+
+  /* User event actions */
+
+//the original list is generated so the objects aren't in the dom by defaults
+$(document.body).on('click', '.team-checks label', function() {
+$(this).toggleClass( "highlight" );
+
+});
+
+
+
+
+  $('.chooseTeams').click(function() {
+     $('.team-checks,#filterBtn').slideDown("fast");
+     $('.chooseTeams').hide();
+  });
+
+/* end visual effects on buttons etc */
+
+ AppInfo.getData('generateTeams');
+
+
+$( ".runApp" ).click(function() {
+
+
+
+
+  var userAction = $(this).attr("id"); //whether its past or future this will dictate the showgames function later
+  AppInfo.userAction = userAction; //pop that info into the AppInfo object
+
+  $('.team-checks,#filterBtn').slideUp("fast");
+  $('.chooseTeams').slideDown('slow');
+
+  AppInfo.getData('showGames'); //getData does the json call, then kicks off the showGames object item
+
+/* checkin stuff */
+
+//the select box doesnt get added til the first script runs so it needs to be targetted as live/on
+$(document.body).on('change', 'select', function() {
+    $('#storecontent li').show();
+    var dateSelected = $(this).val();
+
+if(dateSelected == "reset"){
+    $('#storecontent li').show();
+}
+else{
+    $('#storecontent li:not(:contains('+ dateSelected +'))').hide();
+}
+
+
+});
+
+
+
+
+
+
+}); //end click function
+
+
+
+
+
+
+
+
+
+
+</script>
+	</body>
+</html>

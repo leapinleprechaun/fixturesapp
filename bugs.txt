@@ -1,0 +1,3 @@
+after a while the next match for firsts doesnt work
+
+the checked/not checked list seems to hold values from previous searches
